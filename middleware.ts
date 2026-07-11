@@ -23,11 +23,15 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login') && 
-      !request.nextUrl.pathname.startsWith('/registro') &&
-      !request.nextUrl.pathname.startsWith('/landing')) {
-    return NextResponse.redirect(new URL('/landing', request.url))
-  }
+ if (!user && !request.nextUrl.pathname.startsWith('/login') && 
+    !request.nextUrl.pathname.startsWith('/registro') &&
+    !request.nextUrl.pathname.startsWith('/landing') &&
+    !request.nextUrl.pathname.endsWith('.png') &&
+    !request.nextUrl.pathname.endsWith('.jpg') &&
+    !request.nextUrl.pathname.endsWith('.svg') &&
+    !request.nextUrl.pathname.endsWith('.ico')) {
+  return NextResponse.redirect(new URL('/landing', request.url))
+}
 
   return supabaseResponse
 }
