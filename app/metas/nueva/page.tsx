@@ -26,33 +26,59 @@ export default function NuevaMetaPage() {
   )
 
   const handleCreate = async () => {
-    if (!title) return alert('Escribe el nombre de tu meta')
-    setLoading(true)
+  if (!title) return alert('Escribe el nombre de tu meta')
+  setLoading(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
 
-    const { error } = await supabase
-      .from('goals')
-      .insert({
-        user_id: user.id,
-        title,
-        reason,
-        category,
-        current_streak: 0,
-        longest_streak: 0,
-        total_days: 0
-      })
+  // Verificar límite de metas según plan
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
 
-    if (error) {
-      alert('Error al crear la meta')
-      setLoading(false)
-      return
+  const { count } = await supabase
+    .from('goals')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+
+  const limites: Record<string, number> = { free: 1, light: 3, pro: 999 }
+  const limite = limites[profile?.plan || 'free']
+
+  if ((count || 0) >= limite) {
+    const mensajes: Record<string, string> = {
+      free: 'El plan Free solo permite 1 meta. Suscríbete a Light o Pro para tener más.',
+      light: 'El plan Light permite hasta 3 metas. Suscríbete a Pro para tener metas ilimitadas.',
+      pro: ''
     }
-
-    router.push('/dashboard')
+    alert(mensajes[profile?.plan || 'free'])
+    setLoading(false)
+    return
   }
 
+  const { error } = await supabase
+    .from('goals')
+    .insert({
+      user_id: user.id,
+      title,
+      reason,
+      category,
+      current_streak: 0,
+      longest_streak: 0,
+      total_days: 0
+    })
+
+  if (error) {
+    alert('Error al crear la meta')
+    setLoading(false)
+    return
+  }
+
+  router.push('/dashboard')
+}
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-lg mx-auto">
