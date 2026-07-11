@@ -23,7 +23,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Image src="/logo.png" alt="Day by Day" width={120} height={50} className="h-10 w-auto" />
+          <img src="/logo.png" alt="Day by Day" className="h-10 w-auto" />
           <div className="flex gap-3">
             <Link href="/login" className="text-sm text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 font-medium">
               Iniciar sesión
@@ -355,7 +355,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="bg-gray-900 py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <Image src="/logo.png" alt="Day by Day" width={100} height={40} className="h-8 w-auto brightness-200" />
+          <img src="/logo.png" alt="Day by Day" className="h-10 w-auto" />
           <p className="text-gray-500 text-sm">© 2026 Day by Day · Paso a paso, cada día</p>
           <div className="flex gap-4 text-sm text-gray-500">
             <Link href="/login" className="hover:text-white">Iniciar sesión</Link>
