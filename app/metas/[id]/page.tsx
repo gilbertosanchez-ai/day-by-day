@@ -58,63 +58,81 @@ export default function MetaPage() {
   }, [goalId])
 
   const handleCheck = async (completed: boolean) => {
-    setChecking(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !goal) return
+  setChecking(true)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !goal) return
 
-    // Registrar check del día
+  // Registrar check del día
+  await supabase
+    .from('daily_checks')
+    .upsert({
+      user_id: user.id,
+      goal_id: goalId,
+      completed,
+      check_date: today
+    })
+
+  if (completed) {
+    // Actualizar racha
+    const newStreak = goal.current_streak + 1
+    const newLongest = Math.max(newStreak, goal.longest_streak)
+    const newTotal = goal.total_days + 1
+
     await supabase
-      .from('daily_checks')
-      .upsert({
-        user_id: user.id,
-        goal_id: goalId,
-        completed,
-        check_date: today
+      .from('goals')
+      .update({
+        current_streak: newStreak,
+        longest_streak: newLongest,
+        total_days: newTotal
       })
+      .eq('id', goalId)
 
-    if (completed) {
-      // Actualizar racha y días totales
-      const newStreak = goal.current_streak + 1
-      const newLongest = Math.max(newStreak, goal.longest_streak)
-      const newTotal = goal.total_days + 1
+    // Verificar plan del usuario
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, coins')
+      .eq('id', user.id)
+      .single()
 
-      await supabase
-        .from('goals')
-        .update({
-          current_streak: newStreak,
-          longest_streak: newLongest,
-          total_days: newTotal
-        })
-        .eq('id', goalId)
+    if (profile && profile.plan !== 'free') {
+      // Límite de monedas según plan
+      const limiteMonedas: Record<string, number> = { light: 6, pro: 10 }
+      const limite = limiteMonedas[profile.plan] || 0
 
-      // Dar monedas al usuario (10 por día cumplido)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('coins')
-        .eq('id', user.id)
-        .single()
+      // Contar monedas ganadas hoy
+      const { count: metasHoy } = await supabase
+        .from('daily_checks')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('check_date', today)
+        .eq('completed', true)
 
-      if (profile) {
+      const monedasGanadas = Math.min((metasHoy || 0) * 5, limite)
+      const monedasAnteriores = Math.min(((metasHoy || 1) - 1) * 5, limite)
+      const monedasNuevas = monedasGanadas - monedasAnteriores
+
+      if (monedasNuevas > 0) {
         await supabase
           .from('profiles')
-          .update({ coins: profile.coins + 10 })
+          .update({ coins: profile.coins + monedasNuevas })
           .eq('id', user.id)
       }
-
-      setGoal({ ...goal, current_streak: newStreak, longest_streak: newLongest, total_days: newTotal })
-    } else {
-      // Romper la racha
-      await supabase
-        .from('goals')
-        .update({ current_streak: 0 })
-        .eq('id', goalId)
-
-      setGoal({ ...goal, current_streak: 0 })
     }
 
-    setTodayCheck({ id: '', completed, check_date: today })
-    setChecking(false)
+    setGoal({ ...goal, current_streak: newStreak, longest_streak: newLongest, total_days: newTotal })
+  } else {
+    // Romper la racha
+    await supabase
+      .from('goals')
+      .update({ current_streak: 0 })
+      .eq('id', goalId)
+
+    setGoal({ ...goal, current_streak: 0 })
   }
+
+  setTodayCheck({ id: '', completed, check_date: today })
+  setChecking(false)
+}
 
   if (loading) {
     return (
@@ -183,7 +201,7 @@ export default function MetaPage() {
             <div className={`text-center py-6 rounded-xl ${todayCheck.completed ? 'bg-green-50' : 'bg-red-50'}`}>
               <div className="text-5xl mb-2">{todayCheck.completed ? '✅' : '😔'}</div>
               <p className={`font-bold ${todayCheck.completed ? 'text-green-600' : 'text-red-500'}`}>
-                {todayCheck.completed ? '¡Lo lograste hoy! +10 🪙' : 'Mañana será mejor'}
+               {todayCheck.completed ? '¡Lo lograste hoy! 🪙' : 'Mañana será mejor'}
               </p>
             </div>
           ) : (
