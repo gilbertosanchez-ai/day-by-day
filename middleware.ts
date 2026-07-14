@@ -23,15 +23,21 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
- if (!user && !request.nextUrl.pathname.startsWith('/login') && 
-    !request.nextUrl.pathname.startsWith('/registro') &&
-    !request.nextUrl.pathname.startsWith('/landing') &&
-    !request.nextUrl.pathname.endsWith('.png') &&
-    !request.nextUrl.pathname.endsWith('.jpg') &&
-    !request.nextUrl.pathname.endsWith('.svg') &&
-    !request.nextUrl.pathname.endsWith('.ico')) {
-  return NextResponse.redirect(new URL('/landing', request.url))
-}
+  const isPublicPath = 
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/registro') ||
+    request.nextUrl.pathname.startsWith('/landing') ||
+    request.nextUrl.pathname.endsWith('.png') ||
+    request.nextUrl.pathname.endsWith('.jpg') ||
+    request.nextUrl.pathname.endsWith('.svg') ||
+    request.nextUrl.pathname.endsWith('.ico') ||
+    request.nextUrl.pathname.endsWith('.json') ||
+    request.nextUrl.pathname.endsWith('.js') ||
+    request.nextUrl.pathname === '/'
+
+  if (!user && !isPublicPath) {
+    return NextResponse.redirect(new URL('/landing', request.url))
+  }
 
   return supabaseResponse
 }
