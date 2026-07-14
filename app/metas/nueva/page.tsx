@@ -111,6 +111,22 @@ export default function NuevaMetaPage() {
           <h1 className="text-2xl font-bold text-gray-800">Nueva meta</h1>
         </div>
 
+{/* Categoría */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-3">Categoría</label>
+            <div className="grid grid-cols-3 gap-3">
+              {categorias.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`p-3 rounded-xl border-2 text-center transition-all ${category === cat.id ? 'border-orange-500 bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}
+                >
+                  <div className="text-2xl mb-1">{cat.emoji}</div>
+                  <p className="text-xs font-medium text-gray-600">{cat.label}</p>
+                </button>
+              ))}
+            </div>
+          </div>
         <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
 
           <div>
@@ -180,23 +196,6 @@ export default function NuevaMetaPage() {
               onChange={e => setReminderTime(e.target.value)}
             />
             <p className="text-xs text-gray-400 mt-1">Te avisaremos a esta hora para que no olvides tu meta</p>
-          </div>
-
-          {/* Categoría */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">Categoría</label>
-            <div className="grid grid-cols-3 gap-3">
-              {categorias.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setCategory(cat.id)}
-                  className={`p-3 rounded-xl border-2 text-center transition-all ${category === cat.id ? 'border-orange-500 bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}
-                >
-                  <div className="text-2xl mb-1">{cat.emoji}</div>
-                  <p className="text-xs font-medium text-gray-600">{cat.label}</p>
-                </button>
-              ))}
-            </div>
           </div>
 
           <button
