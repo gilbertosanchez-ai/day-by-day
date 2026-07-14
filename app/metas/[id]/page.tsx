@@ -11,6 +11,7 @@ interface Goal {
   current_streak: number
   longest_streak: number
   total_days: number
+  reminder_time: string | null
 }
 
 interface DailyCheck {
@@ -19,6 +20,25 @@ interface DailyCheck {
   check_date: string
 }
 
+const mensajesExito = [
+  '¡Lo lograste hoy! 🔥 Sigue así',
+  '¡Imparable! Un día más en tu racha 💪',
+  '¡Eso es! Cada día cuenta 🌟',
+  '¡Excelente! Tu futuro yo te lo agradecerá 🙌',
+  '¡Un paso más hacia tu meta! 🎯',
+  '¡Increíble constancia! Eres un ejemplo 🏆',
+  '¡Hoy ganaste! Mañana vuelve a ganar 🔥',
+]
+
+const mensajesFallo = [
+  'Está bien, mañana lo logras 💙',
+  'No pasa nada, lo importante es volver 🙏',
+  'Cada día es una nueva oportunidad 🌅',
+  'Los campeones también tienen días difíciles 💪',
+  'Recuerda por qué empezaste 🎯',
+  'Un tropiezo no es una caída, levántate 🔥',
+  'Mañana empieza una nueva racha 💫',
+]
 export default function MetaPage() {
   const [goal, setGoal] = useState<Goal | null>(null)
   const [todayCheck, setTodayCheck] = useState<DailyCheck | null>(null)
@@ -210,37 +230,72 @@ export default function MetaPage() {
         )}
 
         {/* Check del día */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-          <h2 className="font-bold text-gray-800 mb-4 text-center">
-            ¿Cumpliste hoy?
-          </h2>
+<div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+  <h2 className="font-bold text-gray-800 mb-4 text-center">
+    ¿Cumpliste hoy?
+  </h2>
 
-          {todayCheck ? (
-            <div className={`text-center py-6 rounded-xl ${todayCheck.completed ? 'bg-green-50' : 'bg-red-50'}`}>
-              <div className="text-5xl mb-2">{todayCheck.completed ? '✅' : '😔'}</div>
-              <p className={`font-bold ${todayCheck.completed ? 'text-green-600' : 'text-red-500'}`}>
-                {todayCheck.completed ? '¡Lo lograste hoy! 🪙' : 'Mañana será mejor'}
-              </p>
-            </div>
-          ) : (
-            <div className="flex gap-4">
-              <button
-                onClick={() => handleCheck(true)}
-                disabled={checking}
-                className="flex-1 bg-green-500 text-white rounded-xl py-5 text-center font-bold text-lg hover:bg-green-600 disabled:opacity-50"
-              >
-                ✅ Sí lo hice
-              </button>
-              <button
-                onClick={() => handleCheck(false)}
-                disabled={checking}
-                className="flex-1 bg-red-100 text-red-500 rounded-xl py-5 text-center font-bold text-lg hover:bg-red-200 disabled:opacity-50"
-              >
-                😔 No lo hice
-              </button>
-            </div>
-          )}
+  {(() => {
+    // Verificar si ya pasó la hora de la meta
+    const ahora = new Date()
+    const horaActual = ahora.getHours() * 60 + ahora.getMinutes()
+    
+    let puedeMarcar = true
+    let horaTexto = ''
+    
+    if (goal.reminder_time) {
+      const [horas, minutos] = goal.reminder_time.split(':').map(Number)
+      const horaMetaMinutos = horas * 60 + minutos
+      puedeMarcar = horaActual >= horaMetaMinutos
+      horaTexto = `${horas}:${String(minutos).padStart(2, '0')} ${horas >= 12 ? 'pm' : 'am'}`
+    }
+
+    if (todayCheck) {
+      return (
+        <div className={`text-center py-6 rounded-xl ${todayCheck.completed ? 'bg-green-50' : 'bg-red-50'}`}>
+          <div className="text-5xl mb-2">{todayCheck.completed ? '✅' : '😔'}</div>
+          <p className={`font-bold ${todayCheck.completed ? 'text-green-600' : 'text-red-500'}`}>
+            {todayCheck.completed 
+              ? mensajesExito[Math.floor(Math.random() * mensajesExito.length)]
+              : mensajesFallo[Math.floor(Math.random() * mensajesFallo.length)]
+            }
+          </p>
         </div>
+      )
+    }
+
+    if (!puedeMarcar) {
+      return (
+        <div className="text-center py-6 bg-gray-50 rounded-xl">
+          <div className="text-5xl mb-3">⏰</div>
+          <p className="font-bold text-gray-600">Aún no es hora</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Podrás marcar tu meta a las <strong>{horaTexto}</strong>
+          </p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex gap-4">
+        <button
+          onClick={() => handleCheck(true)}
+          disabled={checking}
+          className="flex-1 bg-green-500 text-white rounded-xl py-5 text-center font-bold text-lg hover:bg-green-600 disabled:opacity-50"
+        >
+          ✅ Sí lo hice
+        </button>
+        <button
+          onClick={() => handleCheck(false)}
+          disabled={checking}
+          className="flex-1 bg-red-100 text-red-500 rounded-xl py-5 text-center font-bold text-lg hover:bg-red-200 disabled:opacity-50"
+        >
+          😔 No lo hice
+        </button>
+      </div>
+    )
+  })()}
+</div>
 
       </div>
     </main>
