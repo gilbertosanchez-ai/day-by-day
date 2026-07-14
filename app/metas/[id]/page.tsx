@@ -39,11 +39,16 @@ const mensajesFallo = [
   'Un tropiezo no es una caída, levántate 🔥',
   'Mañana empieza una nueva racha 💫',
 ]
+
 export default function MetaPage() {
   const [goal, setGoal] = useState<Goal | null>(null)
   const [todayCheck, setTodayCheck] = useState<DailyCheck | null>(null)
   const [loading, setLoading] = useState(true)
   const [checking, setChecking] = useState(false)
+  const [mostrarModal, setMostrarModal] = useState(false)
+  const [mensajePost, setMensajePost] = useState('')
+  const [checkId, setCheckId] = useState<string | null>(null)
+  const [publicando, setPublicando] = useState(false)
   const router = useRouter()
   const params = useParams()
   const goalId = params.id as string
@@ -80,16 +85,8 @@ export default function MetaPage() {
   const handleEliminar = async () => {
     if (!confirm('¿Seguro que quieres eliminar esta meta? Se perderá todo el progreso.')) return
 
-    await supabase
-      .from('daily_checks')
-      .delete()
-      .eq('goal_id', goalId)
-
-    await supabase
-      .from('goals')
-      .delete()
-      .eq('id', goalId)
-
+    await supabase.from('daily_checks').delete().eq('goal_id', goalId)
+    await supabase.from('goals').delete().eq('id', goalId)
     router.push('/dashboard')
   }
 
@@ -98,14 +95,25 @@ export default function MetaPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || !goal) return
 
+    // Un solo upsert que devuelve el id
     await supabase
-      .from('daily_checks')
-      .upsert({
-        user_id: user.id,
-        goal_id: goalId,
-        completed,
-        check_date: today
-      })
+  .from('daily_checks')
+  .upsert({
+    user_id: user.id,
+    goal_id: goalId,
+    completed,
+    check_date: today
+  }, { onConflict: 'goal_id,check_date' })
+
+const { data: checkData } = await supabase
+  .from('daily_checks')
+  .select('id')
+  .eq('goal_id', goalId)
+  .eq('check_date', today)
+  .single()
+
+setCheckId(checkData?.id || null)
+setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
 
     if (completed) {
       const newStreak = goal.current_streak + 1
@@ -151,18 +159,36 @@ export default function MetaPage() {
       }
 
       setGoal({ ...goal, current_streak: newStreak, longest_streak: newLongest, total_days: newTotal })
+      setMensajePost(`¡Cumplí mi meta hoy! 🔥 Día ${newStreak} de racha en "${goal.title}"`)
+      setMostrarModal(true)
     } else {
       await supabase
         .from('goals')
         .update({ current_streak: 0 })
         .eq('id', goalId)
-
       setGoal({ ...goal, current_streak: 0 })
     }
 
-    setTodayCheck({ id: '', completed, check_date: today })
     setChecking(false)
   }
+
+  const handlePublicar = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  setPublicando(true)
+
+  const { data, error } = await supabase.from('posts').insert({
+    user_id: user.id,
+    goal_id: goalId,
+    daily_check_id: checkId,
+    content: mensajePost
+  }).select()
+
+  console.log('POST RESULT:', data, error)
+
+  setPublicando(false)
+  setMostrarModal(false)
+}
 
   if (loading) {
     return (
@@ -189,10 +215,7 @@ export default function MetaPage() {
               <p className="text-xs text-gray-400 capitalize">{goal.category}</p>
             </div>
           </div>
-          <button
-            onClick={handleEliminar}
-            className="text-red-400 hover:text-red-600 text-sm font-medium"
-          >
+          <button onClick={handleEliminar} className="text-red-400 hover:text-red-600 text-sm font-medium">
             🗑️ Eliminar
           </button>
         </div>
@@ -230,74 +253,104 @@ export default function MetaPage() {
         )}
 
         {/* Check del día */}
-<div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-  <h2 className="font-bold text-gray-800 mb-4 text-center">
-    ¿Cumpliste hoy?
-  </h2>
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+          <h2 className="font-bold text-gray-800 mb-4 text-center">¿Cumpliste hoy?</h2>
+          {(() => {
+            const ahora = new Date()
+            const horaActual = ahora.getHours() * 60 + ahora.getMinutes()
+            let puedeMarcar = true
+            let horaTexto = ''
 
-  {(() => {
-    // Verificar si ya pasó la hora de la meta
-    const ahora = new Date()
-    const horaActual = ahora.getHours() * 60 + ahora.getMinutes()
-    
-    let puedeMarcar = true
-    let horaTexto = ''
-    
-    if (goal.reminder_time) {
-      const [horas, minutos] = goal.reminder_time.split(':').map(Number)
-      const horaMetaMinutos = horas * 60 + minutos
-      puedeMarcar = horaActual >= horaMetaMinutos
-      horaTexto = `${horas}:${String(minutos).padStart(2, '0')} ${horas >= 12 ? 'pm' : 'am'}`
-    }
-
-    if (todayCheck) {
-      return (
-        <div className={`text-center py-6 rounded-xl ${todayCheck.completed ? 'bg-green-50' : 'bg-red-50'}`}>
-          <div className="text-5xl mb-2">{todayCheck.completed ? '✅' : '😔'}</div>
-          <p className={`font-bold ${todayCheck.completed ? 'text-green-600' : 'text-red-500'}`}>
-            {todayCheck.completed 
-              ? mensajesExito[Math.floor(Math.random() * mensajesExito.length)]
-              : mensajesFallo[Math.floor(Math.random() * mensajesFallo.length)]
+            if (goal.reminder_time) {
+              const [horas, minutos] = goal.reminder_time.split(':').map(Number)
+              const horaMetaMinutos = horas * 60 + minutos
+              puedeMarcar = horaActual >= horaMetaMinutos
+              horaTexto = `${horas}:${String(minutos).padStart(2, '0')} ${horas >= 12 ? 'pm' : 'am'}`
             }
-          </p>
+
+            if (todayCheck) {
+              return (
+                <div className={`text-center py-6 rounded-xl ${todayCheck.completed ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <div className="text-5xl mb-2">{todayCheck.completed ? '✅' : '😔'}</div>
+                  <p className={`font-bold ${todayCheck.completed ? 'text-green-600' : 'text-red-500'}`}>
+                    {todayCheck.completed
+                      ? mensajesExito[Math.floor(Math.random() * mensajesExito.length)]
+                      : mensajesFallo[Math.floor(Math.random() * mensajesFallo.length)]
+                    }
+                  </p>
+                </div>
+              )
+            }
+
+            if (!puedeMarcar) {
+              return (
+                <div className="text-center py-6 bg-gray-50 rounded-xl">
+                  <div className="text-5xl mb-3">⏰</div>
+                  <p className="font-bold text-gray-600">Aún no es hora</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Podrás marcar tu meta a las <strong>{horaTexto}</strong>
+                  </p>
+                </div>
+              )
+            }
+
+            return (
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleCheck(true)}
+                  disabled={checking}
+                  className="flex-1 bg-green-500 text-white rounded-xl py-5 text-center font-bold text-lg hover:bg-green-600 disabled:opacity-50"
+                >
+                  ✅ Sí lo hice
+                </button>
+                <button
+                  onClick={() => handleCheck(false)}
+                  disabled={checking}
+                  className="flex-1 bg-red-100 text-red-500 rounded-xl py-5 text-center font-bold text-lg hover:bg-red-200 disabled:opacity-50"
+                >
+                  😔 No lo hice
+                </button>
+              </div>
+            )
+          })()}
         </div>
-      )
-    }
 
-    if (!puedeMarcar) {
-      return (
-        <div className="text-center py-6 bg-gray-50 rounded-xl">
-          <div className="text-5xl mb-3">⏰</div>
-          <p className="font-bold text-gray-600">Aún no es hora</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Podrás marcar tu meta a las <strong>{horaTexto}</strong>
-          </p>
+      </div>
+
+      {/* Modal compartir */}
+      {mostrarModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 px-4 pb-8">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">🎉</div>
+              <h3 className="text-lg font-bold text-gray-800">¡Excelente! ¿Lo compartimos?</h3>
+              <p className="text-sm text-gray-400 mt-1">Tus amigos verán tu logro en el feed</p>
+            </div>
+            <textarea
+              value={mensajePost}
+              onChange={e => setMensajePost(e.target.value)}
+              rows={3}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 mb-4 resize-none"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMostrarModal(false)}
+                className="flex-1 border border-gray-200 text-gray-500 rounded-xl py-3 font-medium hover:bg-gray-50"
+              >
+                No gracias
+              </button>
+              <button
+                onClick={handlePublicar}
+                disabled={publicando}
+                className="flex-1 bg-orange-500 text-white rounded-xl py-3 font-semibold hover:bg-orange-600 disabled:opacity-50"
+              >
+                {publicando ? '...' : '🔥 Compartir'}
+              </button>
+            </div>
+          </div>
         </div>
-      )
-    }
+      )}
 
-    return (
-      <div className="flex gap-4">
-        <button
-          onClick={() => handleCheck(true)}
-          disabled={checking}
-          className="flex-1 bg-green-500 text-white rounded-xl py-5 text-center font-bold text-lg hover:bg-green-600 disabled:opacity-50"
-        >
-          ✅ Sí lo hice
-        </button>
-        <button
-          onClick={() => handleCheck(false)}
-          disabled={checking}
-          className="flex-1 bg-red-100 text-red-500 rounded-xl py-5 text-center font-bold text-lg hover:bg-red-200 disabled:opacity-50"
-        >
-          😔 No lo hice
-        </button>
-      </div>
-    )
-  })()}
-</div>
-
-      </div>
     </main>
   )
 }

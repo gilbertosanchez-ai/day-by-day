@@ -47,18 +47,29 @@ export default function SocialPage() {
       if (!user) return
       setUserId(user.id)
 
-      const { data } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles(name),
-          goals(title, current_streak),
-          reactions(type, user_id)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(30)
+     const { data } = await supabase
+  .from('posts')
+  .select(`
+    *,
+    goals(title, current_streak),
+    reactions(type, user_id)
+  `)
+  .order('created_at', { ascending: false })
+  .limit(30)
 
-      setPosts(data || [])
+// Enriquecer con nombre del perfil
+const postsConPerfil = await Promise.all(
+  (data || []).map(async (post) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', post.user_id)
+      .single()
+    return { ...post, profiles: profile }
+  })
+)
+
+setPosts(postsConPerfil)
       setLoading(false)
     }
     cargarFeed()
