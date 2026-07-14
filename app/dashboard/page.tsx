@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
+import NotificationSetup from '@/components/NotificationSetup'
 
 interface Profile {
   name: string
@@ -60,6 +61,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-orange-50 flex items-center justify-center">
+       <NotificationSetup />
         <div className="text-4xl animate-spin">🔥</div>
       </main>
     )
