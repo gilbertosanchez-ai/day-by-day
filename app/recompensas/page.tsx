@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import BottomNav from '@/components/BottomNav'
 
 interface Reward {
   id: string
@@ -155,27 +156,7 @@ export default function RecompensasPage() {
         </div>
       </div>
 
-      {/* Nav inferior */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3">
-        <div className="max-w-2xl mx-auto flex justify-around">
-          <a href="/dashboard" className="flex flex-col items-center gap-1 text-gray-400 hover:text-orange-500">
-            <span className="text-xl">🏠</span>
-            <span className="text-xs">Inicio</span>
-          </a>
-          <a href="/metas" className="flex flex-col items-center gap-1 text-gray-400 hover:text-orange-500">
-            <span className="text-xl">🎯</span>
-            <span className="text-xs">Metas</span>
-          </a>
-          <a href="/recompensas" className="flex flex-col items-center gap-1 text-orange-500">
-            <span className="text-xl">🏆</span>
-            <span className="text-xs font-medium">Premios</span>
-          </a>
-          <a href="/perfil" className="flex flex-col items-center gap-1 text-gray-400 hover:text-orange-500">
-            <span className="text-xl">👤</span>
-            <span className="text-xs">Perfil</span>
-          </a>
-        </div>
-      </div>
+     <BottomNav active="recompensas" />
 
     </main>
   )
