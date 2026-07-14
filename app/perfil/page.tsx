@@ -7,6 +7,7 @@ interface Profile {
   name: string
   coins: number
   created_at: string
+  plan: string
 }
 
 interface Goal {
@@ -81,15 +82,41 @@ export default function PerfilPage() {
       <div className="max-w-lg mx-auto px-6 py-8 space-y-6">
 
         {/* Avatar y nombre */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 text-center border border-gray-100">
-          <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
-            🔥
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800">{profile?.name}</h2>
-          <p className="text-gray-400 text-sm mt-1">
-            Miembro desde {new Date(profile?.created_at || '').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
-          </p>
-        </div>
+<div className="bg-white rounded-2xl shadow-sm p-6 text-center border border-gray-100">
+  <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+    🔥
+  </div>
+  <h2 className="text-2xl font-bold text-gray-800">{profile?.name}</h2>
+  <p className="text-gray-400 text-sm mt-1">
+    Miembro desde {new Date(profile?.created_at || '').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
+  </p>
+
+  {/* Plan actual */}
+  <div className="mt-4">
+    {profile?.plan === 'free' && (
+      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <p className="text-sm text-gray-500 mb-2">Estás en el plan <strong>Free</strong></p>
+        <a href="/precios" className="block w-full bg-orange-500 text-white rounded-lg py-2 text-sm font-semibold hover:bg-orange-600">
+          ⚡ Mejora a Light o Pro →
+        </a>
+      </div>
+    )}
+    {profile?.plan === 'light' && (
+      <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+        <p className="text-sm text-blue-600 mb-2">Plan <strong>Light ⚡</strong> activo</p>
+        <a href="/precios" className="block w-full bg-orange-500 text-white rounded-lg py-2 text-sm font-semibold hover:bg-orange-600">
+          🔥 Mejora a Pro →
+        </a>
+      </div>
+    )}
+    {profile?.plan === 'pro' && (
+      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+        <p className="text-sm text-orange-600 font-bold">🔥 Plan Pro activo</p>
+        <p className="text-xs text-gray-400 mt-1">Tienes acceso a todo</p>
+      </div>
+    )}
+  </div>
+</div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
