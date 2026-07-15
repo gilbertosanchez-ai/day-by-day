@@ -49,6 +49,9 @@ export default function MetaPage() {
   const [mensajePost, setMensajePost] = useState('')
   const [checkId, setCheckId] = useState<string | null>(null)
   const [publicando, setPublicando] = useState(false)
+  const [mediaFile, setMediaFile] = useState<File | null>(null)
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null)
+  const [mediaType, setMediaType] = useState<string | null>(null)
   const router = useRouter()
   const params = useParams()
   const goalId = params.id as string
@@ -84,10 +87,24 @@ export default function MetaPage() {
 
   const handleEliminar = async () => {
     if (!confirm('¿Seguro que quieres eliminar esta meta? Se perderá todo el progreso.')) return
-
     await supabase.from('daily_checks').delete().eq('goal_id', goalId)
     await supabase.from('goals').delete().eq('id', goalId)
     router.push('/dashboard')
+  }
+
+  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 20 * 1024 * 1024) {
+      alert('El archivo es muy grande. Máximo 20MB')
+      return
+    }
+    const isVideo = file.type.startsWith('video/')
+    setMediaFile(file)
+    setMediaType(isVideo ? 'video' : 'image')
+    const reader = new FileReader()
+    reader.onload = (ev) => setMediaPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
   }
 
   const handleCheck = async (completed: boolean) => {
@@ -95,25 +112,24 @@ export default function MetaPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || !goal) return
 
-    // Un solo upsert que devuelve el id
     await supabase
-  .from('daily_checks')
-  .upsert({
-    user_id: user.id,
-    goal_id: goalId,
-    completed,
-    check_date: today
-  }, { onConflict: 'goal_id,check_date' })
+      .from('daily_checks')
+      .upsert({
+        user_id: user.id,
+        goal_id: goalId,
+        completed,
+        check_date: today
+      }, { onConflict: 'goal_id,check_date' })
 
-const { data: checkData } = await supabase
-  .from('daily_checks')
-  .select('id')
-  .eq('goal_id', goalId)
-  .eq('check_date', today)
-  .single()
+    const { data: checkData } = await supabase
+      .from('daily_checks')
+      .select('id')
+      .eq('goal_id', goalId)
+      .eq('check_date', today)
+      .single()
 
-setCheckId(checkData?.id || null)
-setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
+    setCheckId(checkData?.id || null)
+    setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
 
     if (completed) {
       const newStreak = goal.current_streak + 1
@@ -122,11 +138,7 @@ setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
 
       await supabase
         .from('goals')
-        .update({
-          current_streak: newStreak,
-          longest_streak: newLongest,
-          total_days: newTotal
-        })
+        .update({ current_streak: newStreak, longest_streak: newLongest, total_days: newTotal })
         .eq('id', goalId)
 
       const { data: profile } = await supabase
@@ -162,10 +174,7 @@ setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
       setMensajePost(`¡Cumplí mi meta hoy! 🔥 Día ${newStreak} de racha en "${goal.title}"`)
       setMostrarModal(true)
     } else {
-      await supabase
-        .from('goals')
-        .update({ current_streak: 0 })
-        .eq('id', goalId)
+      await supabase.from('goals').update({ current_streak: 0 }).eq('id', goalId)
       setGoal({ ...goal, current_streak: 0 })
     }
 
@@ -173,22 +182,43 @@ setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
   }
 
   const handlePublicar = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  setPublicando(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setPublicando(true)
 
-  const { data, error } = await supabase.from('posts').insert({
-    user_id: user.id,
-    goal_id: goalId,
-    daily_check_id: checkId,
-    content: mensajePost
-  }).select()
+    let media_url = null
+    let media_type_final = 'text'
 
-  console.log('POST RESULT:', data, error)
+    if (mediaFile && mediaType) {
+      const ext = mediaFile.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}.${ext}`
 
-  setPublicando(false)
-  setMostrarModal(false)
-}
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(fileName, mediaFile, { contentType: mediaFile.type })
+
+      if (!uploadError && uploadData) {
+        const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName)
+        media_url = urlData.publicUrl
+        media_type_final = mediaType
+      }
+    }
+
+    await supabase.from('posts').insert({
+      user_id: user.id,
+      goal_id: goalId,
+      daily_check_id: checkId,
+      content: mensajePost,
+      media_url,
+      media_type: media_type_final
+    })
+
+    setPublicando(false)
+    setMostrarModal(false)
+    setMediaFile(null)
+    setMediaPreview(null)
+    setMediaType(null)
+  }
 
   if (loading) {
     return (
@@ -207,9 +237,7 @@ setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
       <div className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-600 text-2xl">
-              ←
-            </button>
+            <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-600 text-2xl">←</button>
             <div>
               <h1 className="font-bold text-gray-800 text-lg">{goal.title}</h1>
               <p className="text-xs text-gray-400 capitalize">{goal.category}</p>
@@ -332,9 +360,37 @@ setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
               rows={3}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 mb-4 resize-none"
             />
+
+            {/* Subir foto o video */}
+            <div className="mb-4">
+              <label className="block border-2 border-dashed border-gray-200 rounded-xl p-4 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
+                {mediaPreview ? (
+                  mediaType === 'video' ? (
+                    <video src={mediaPreview} className="w-full max-h-40 rounded-lg object-cover" controls />
+                  ) : (
+                    <img src={mediaPreview} alt="preview" className="w-full max-h-40 rounded-lg object-cover" />
+                  )
+                ) : (
+                  <div>
+                    <p className="text-2xl mb-1">📸</p>
+                    <p className="text-sm text-gray-500">Agrega foto o video (máx 10s · 20MB)</p>
+                  </div>
+                )}
+                <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaChange} />
+              </label>
+              {mediaPreview && (
+                <button
+                  onClick={() => { setMediaFile(null); setMediaPreview(null); setMediaType(null) }}
+                  className="text-xs text-red-400 mt-2 hover:text-red-600"
+                >
+                  ✕ Quitar archivo
+                </button>
+              )}
+            </div>
+
             <div className="flex gap-3">
               <button
-                onClick={() => setMostrarModal(false)}
+                onClick={() => { setMostrarModal(false); setMediaFile(null); setMediaPreview(null); setMediaType(null) }}
                 className="flex-1 border border-gray-200 text-gray-500 rounded-xl py-3 font-medium hover:bg-gray-50"
               >
                 No gracias
@@ -344,7 +400,7 @@ setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
                 disabled={publicando}
                 className="flex-1 bg-orange-500 text-white rounded-xl py-3 font-semibold hover:bg-orange-600 disabled:opacity-50"
               >
-                {publicando ? '...' : '🔥 Compartir'}
+                {publicando ? 'Subiendo...' : '🔥 Compartir'}
               </button>
             </div>
           </div>
