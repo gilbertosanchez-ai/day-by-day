@@ -2,150 +2,83 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import NotificationSetup from '@/components/NotificationSetup'
 import BottomNav from '@/components/BottomNav'
 
-interface Profile {
-  name: string
-  coins: number
-}
-
-interface Goal {
-  id: string
-  title: string
-  category: string
-  current_streak: number
-  longest_streak: number
-  total_days: number
-}
+interface Profile { name: string; coins: number }
+interface Goal { id: string; title: string; category: string; current_streak: number; longest_streak: number; total_days: number }
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
+  const [amigosCount, setAmigosCount] = useState(0)
+  const [solicitudesCount, setSolicitudesCount] = useState(0)
+  const [reto, setReto] = useState<{title:string, desc:string, participantes:number} | null>(null)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
   useEffect(() => {
     const cargarDatos = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      const { data: goalsData } = await supabase.from('goals').select('*').eq('user_id', user.id).eq('status','active').order('created_at',{ascending:false})
+      setProfile(profileData); setGoals(goalsData||[])
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      const { data: friendships } = await supabase.from('friendships').select('status,friend_id,user_id').or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+      if(friendships){
+        setAmigosCount(friendships.filter(f=>f.status==='accepted').length)
+        setSolicitudesCount(friendships.filter(f=>f.friend_id===user.id && f.status==='pending').length)
+      }
+      // Reto semanal - intenta de tu tabla, si no hay muestra uno por defecto
+      const { data: retoData } = await supabase.from('challenges').select('title,description').eq('is_active',true).limit(1).maybeSingle()
+      if(retoData) setReto({title:retoData.title, desc:retoData.description, participantes: 124})
+      else setReto({title:'7 días sin excusas', desc:'Completa tu meta todos los días esta semana', participantes: 89})
 
-      const { data: goalsData } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-
-      setProfile(profileData)
-      setGoals(goalsData || [])
       setLoading(false)
     }
     cargarDatos()
   }, [])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/landing'
-  }
-
-  if (loading) {
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href='/landing' }
+  if (loading) return <main className="min-h-screen bg-orange-50 flex items-center justify-center"><div className="text-4xl animate-spin">🔥</div></main>
     return (
-      <main className="min-h-screen bg-orange-50 flex items-center justify-center">
-       <NotificationSetup />
-        <div className="text-4xl animate-spin">🔥</div>
-      </main>
-    )
-  }
-
-  return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🔥</span>
-            <div>
-              <p className="font-bold text-gray-800">¡Hola, {profile?.name}!</p>
-              <p className="text-xs text-gray-500">Sigue así, no te rindas</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-1 flex items-center gap-1">
-              <span>🪙</span>
-              <span className="font-bold text-yellow-700">{profile?.coins}</span>
-            </div>
-            <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">
-              Salir
-            </button>
-          </div>
+          <div className="flex items-center gap-3"><span className="text-2xl">🔥</span><div><p className="font-bold text-gray-800">¡Hola, {profile?.name}!</p><p className="text-xs text-gray-500">Sigue así, no te rindas</p></div></div>
+          <div className="flex items-center gap-3"><div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-1 flex items-center gap-1"><span>🪙</span><span className="font-bold text-yellow-700">{profile?.coins}</span></div><button onClick={handleLogout} className="text-sm text-gray-400">Salir</button></div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-6 py-6">
+        {/* 1. LO MÁS IMPORTANTE */}
+        <Link href="/metas/nueva" className="block w-full bg-orange-500 text-white rounded-2xl py-4 text-center font-semibold text-lg hover:bg-orange-600 transition-colors mb-6 shadow-sm">+ Nueva meta</Link>
 
-        {/* Botón nueva meta */}
-        <Link href="/metas/nueva" className="block w-full bg-orange-500 text-white rounded-2xl py-4 text-center font-semibold text-lg hover:bg-orange-600 transition-colors mb-8">
-          + Nueva meta
-        </Link>
-
-        {/* Mis metas */}
-        {goals.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">
-            <div className="text-6xl mb-4">🎯</div>
-            <h2 className="text-xl font-bold text-gray-700 mb-2">Aún no tienes metas</h2>
-            <p className="text-gray-400 mb-6">Crea tu primera meta y empieza tu racha hoy</p>
-            <Link href="/metas/nueva" className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600">
-              Crear primera meta →
-            </Link>
-          </div>
+        {/* 2. MIS METAS */}
+        {goals.length===0? (
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center border mb-6"><div className="text-6xl mb-4">🎯</div><h2 className="text-xl font-bold text-gray-700 mb-2">Aún no tienes metas</h2><p className="text-gray-400 mb-6">Crea tu primera meta y empieza tu racha hoy</p><Link href="/metas/nueva" className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold">Crear primera meta →</Link></div>
         ) : (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-gray-800">Mis metas activas</h2>
-            {goals.map(goal => (
-              <Link key={goal.id} href={`/metas/${goal.id}`}>
-                <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-800 text-lg mb-1">{goal.title}</h3>
-                      <p className="text-gray-400 text-sm capitalize">{goal.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <span className="text-2xl">🔥</span>
-                        <span className="text-2xl font-bold text-orange-500">{goal.current_streak}</span>
-                      </div>
-                      <p className="text-xs text-gray-400">días seguidos</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 mt-4 pt-4 border-t border-gray-50">
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-gray-700">{goal.total_days}</p>
-                      <p className="text-xs text-gray-400">días totales</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-gray-700">{goal.longest_streak}</p>
-                      <p className="text-xs text-gray-400">mejor racha</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="space-y-3 mb-8"><h2 className="text-lg font-bold text-gray-800">Mis metas activas</h2>
+            {goals.map(goal=>(<Link key={goal.id} href={`/metas/${goal.id}`}><div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md cursor-pointer mb-3"><div className="flex justify-between"><div><h3 className="font-bold text-gray-800">{goal.title}</h3><p className="text-gray-400 text-sm capitalize">{goal.category}</p></div><div className="text-right"><div className="flex gap-1 justify-end"><span className="text-2xl">🔥</span><span className="text-2xl font-bold text-orange-500">{goal.current_streak}</span></div><p className="text-xs text-gray-400">días seguidos</p></div></div></div></Link>))}
           </div>
         )}
 
-       <BottomNav active="dashboard" />
+        {/* 3. AHORA SÍ, RETO Y TRIBU ABAJO COMO SECUNDARIO */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/social/retos" className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white">
+            <span className="bg-white/20 text- px-2 py-1 rounded-full">⚡ RETO</span>
+            <h3 className="font-bold text-sm mt-2 leading-tight">{reto?.title}</h3><p className="text-white/80 text- mt-1 line-clamp-2">{reto?.desc}</p>
+            <span className="bg-white text-orange-600 text- font-bold px-3 py-1 rounded-full inline-block mt-3">Unirme</span>
+          </Link>
+          <Link href="/social/amigos" className="bg-white rounded-2xl p-4 border">
+            <div className="flex justify-between"><span className="text- font-bold text-gray-500">👥 TRIBU</span>{solicitudesCount>0 && <span className="bg-red-500 text-white text- px-2 rounded-full">{solicitudesCount}</span>}</div>
+            <p className="text-2xl font-black mt-2">{amigosCount}</p><p className="text-xs text-gray-400">amigos</p>
+            <span className="mt-3 bg-gray-900 text-white text- font-bold px-3 py-1 rounded-full inline-block">{solicitudesCount>0?`${solicitudesCount} solicitudes`:'Ver amigos'}</span>
+          </Link>
+        </div>
 
+        <BottomNav active="dashboard" />
       </div>
     </main>
   )
