@@ -10,9 +10,11 @@ interface Post {
   content: string
   media_url: string | null
   media_type: string | null
+  image_url?: string | null
   created_at: string
   goal_id: string | null
   repost_of: string | null
+  views_count: number
   profiles: { name: string } | null
   goals: { title: string; current_streak: number } | null
   reactions: { type: string; user_id: string }[]
@@ -20,7 +22,7 @@ interface Post {
 }
 
 const REACTION_EMOJIS: Record<string, string> = {
-  heart: '❤️',
+  heart: '❤',
   fire: '🔥',
   muscle: '💪',
   clap: '🙌'
@@ -36,6 +38,7 @@ export default function SocialPage() {
   const [enviandoComment, setEnviandoComment] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({})
+  const lastViewedRef = useRef<Record<string, number>>({})
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,7 +46,7 @@ export default function SocialPage() {
   )
 
   const tiempoRelativo = (fecha: string) => {
-    const diff = Date.now() - new Date(fecha + 'Z').getTime()
+    const diff = Date.now() - new Date(fecha).getTime()
     const mins = Math.floor(diff / 60000)
     if (mins < 1) return 'ahora'
     if (mins < 60) return `hace ${mins}m`
@@ -60,12 +63,12 @@ export default function SocialPage() {
 
       const { data } = await supabase
         .from('posts')
-        .select(`*, goals(title, current_streak), reactions(type, user_id), comments(id, user_id, content, created_at)`)
+        .select(`id, user_id, content, media_url, media_type, image_url, created_at, goal_id, repost_of, views_count, goals(title, current_streak), reactions(type, user_id), comments(id, user_id, content, created_at)`)
         .order('created_at', { ascending: false })
         .limit(30)
 
       const postsConPerfil = await Promise.all(
-        (data || []).map(async (post) => {
+        (data || []).map(async (post: any) => {
           const { data: profile } = await supabase
             .from('profiles')
             .select('name')
@@ -79,7 +82,7 @@ export default function SocialPage() {
             })
           )
 
-          return { ...post, profiles: profile, comments: commentsConPerfil }
+          return { ...post, profiles: profile, comments: commentsConPerfil, views_count: post.views_count || 0 }
         })
       )
 
@@ -89,6 +92,25 @@ export default function SocialPage() {
     cargarFeed()
   }, [])
 
+  // Contador de vistas estilo TikTok
+  useEffect(() => {
+    if (!userId || posts.length === 0) return
+    const post = posts[activeIndex]
+    if (!post) return
+
+    const now = Date.now()
+    const last = lastViewedRef.current[post.id] || 0
+    if (now - last < 2 * 60 * 1000) return
+
+    const timer = setTimeout(async () => {
+      lastViewedRef.current[post.id] = now
+      setPosts(prev => prev.map(p => p.id === post.id ? { ...p, views_count: (p.views_count || 0) + 1 } : p))
+      await supabase.rpc('increment_post_view', { p_post_id: post.id, p_user_id: userId })
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [activeIndex, userId, posts.length])
+
   // Detectar qué post está visible y pausar/reproducir videos
   useEffect(() => {
     const container = containerRef.current
@@ -96,12 +118,13 @@ export default function SocialPage() {
 
     const handleScroll = () => {
       const scrollTop = container.scrollTop
-      const height = window.innerHeight
+      const height = container.clientHeight
       const index = Math.round(scrollTop / height)
-      setActiveIndex(index)
-      setExpandedComments(false)
+      if (index !== activeIndex) {
+        setActiveIndex(index)
+        setExpandedComments(false)
+      }
 
-      // Pausar todos los videos y reproducir solo el activo
       Object.entries(videoRefs.current).forEach(([id, video]) => {
         if (!video) return
         const postIndex = posts.findIndex(p => p.id === id)
@@ -115,7 +138,7 @@ export default function SocialPage() {
 
     container.addEventListener('scroll', handleScroll, { passive: true })
     return () => container.removeEventListener('scroll', handleScroll)
-  }, [posts])
+  }, [posts, activeIndex])
 
   const handleReaction = async (postId: string, type: string) => {
     if (!userId) return
@@ -189,111 +212,61 @@ export default function SocialPage() {
 
   return (
     <main className="fixed inset-0 bg-black">
-
-      {/* Header flotante */}
       <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-4 flex items-center justify-between">
         <h1 className="text-white font-bold text-lg">🤝 Social</h1>
         <div className="flex gap-2">
-          <Link href="/social/amigos" className="bg-white/20 backdrop-blur text-white px-3 py-1.5 rounded-xl text-sm font-medium">
-            👥
-          </Link>
-          <Link href="/social/retos" className="bg-orange-500 text-white px-3 py-1.5 rounded-xl text-sm font-medium">
-            ⚡
-          </Link>
+          <Link href="/social/amigos" className="bg-white/20 backdrop-blur text-white px-3 py-1.5 rounded-xl text-sm font-medium">👥</Link>
+          <Link href="/social/retos" className="bg-orange-500 text-white px-3 py-1.5 rounded-xl text-sm font-medium">⚡</Link>
         </div>
       </div>
 
-      {/* Feed deslizable */}
-      <div
-        ref={containerRef}
-        className="h-full overflow-y-scroll snap-y snap-mandatory"
-        style={{ scrollbarWidth: 'none' }}
-      >
-        {posts.map((post, index) => (
-          <div
-            key={post.id}
-            className="h-screen w-full snap-start snap-always relative flex items-end"
-          >
-            {/* Fondo según tipo de media */}
-            {post.media_type === 'video' && post.media_url ? (
-              <video
-                ref={el => { videoRefs.current[post.id] = el }}
-                src={post.media_url}
-                className="absolute inset-0 w-full h-full object-cover"
-                loop
-                muted
-                playsInline
-                autoPlay={index === 0}
-              />
-            ) : post.media_type === 'image' && post.media_url ? (
-              <img
-                src={post.media_url}
-                alt="post"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+      <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+        {posts.map((post, index) => {
+          const mediaUrl = post.media_url || post.image_url
+          const mediaType = post.media_type || (post.image_url ? 'image' : 'text')
+          return (
+          <div key={post.id} className="h-screen w-full snap-start snap-always relative flex items-end">
+            {mediaType === 'video' && mediaUrl ? (
+              <video ref={el => { videoRefs.current[post.id] = el }} src={mediaUrl} className="absolute inset-0 w-full h-full object-cover" loop muted playsInline autoPlay={index === 0} />
+            ) : mediaType === 'image' && mediaUrl ? (
+              <img src={mediaUrl} alt="post" className="absolute inset-0 w-full h-full object-cover" />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-orange-600 via-orange-500 to-yellow-500" />
             )}
-
-            {/* Overlay oscuro */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
-
-            {/* Botones de reacción — derecha */}
             <div className="absolute right-4 bottom-32 flex flex-col gap-4 items-center z-20">
               {Object.entries(REACTION_EMOJIS).map(([type, emoji]) => (
-                <button
-                  key={type}
-                  onClick={() => handleReaction(post.id, type)}
-                  className="flex flex-col items-center gap-1"
-                >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform ${yoReaccioné(post, type) ? 'scale-125' : ''}`}>
-                    {emoji}
-                  </div>
-                  {contarReaccion(post, type) > 0 && (
-                    <span className="text-white text-xs font-bold">{contarReaccion(post, type)}</span>
-                  )}
+                <button key={type} onClick={() => handleReaction(post.id, type)} className="flex flex-col items-center gap-1">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform ${yoReaccioné(post, type) ? 'scale-125' : ''}`}>{emoji}</div>
+                  {contarReaccion(post, type) > 0 && <span className="text-white text-xs font-bold">{contarReaccion(post, type)}</span>}
                 </button>
               ))}
-
-              {/* Comentarios */}
-              <button
-                onClick={() => setExpandedComments(!expandedComments)}
-                className="flex flex-col items-center gap-1"
-              >
+              <button onClick={() => setExpandedComments(!expandedComments)} className="flex flex-col items-center gap-1">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl">💬</div>
-                {post.comments.length > 0 && (
-                  <span className="text-white text-xs font-bold">{post.comments.length}</span>
-                )}
+                {post.comments.length > 0 && <span className="text-white text-xs font-bold">{post.comments.length}</span>}
               </button>
+              <div className="flex flex-col items-center gap-1 mt-2">
+                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur flex items-center justify-center text-xl">👁️</div>
+                <span className="text-white text-xs font-bold">{post.views_count}</span>
+              </div>
             </div>
-
-            {/* Info del post — abajo izquierda */}
             <div className="relative z-20 px-4 pb-24 flex-1 mr-16">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-9 h-9 bg-orange-400 rounded-full flex items-center justify-center text-lg">🔥</div>
                 <div>
                   <p className="text-white font-bold text-sm">{post.profiles?.name}</p>
-                  <p className="text-white/60 text-xs">{tiempoRelativo(post.created_at)}</p>
+                  <p className="text-white/60 text-xs">{tiempoRelativo(post.created_at)} • 👁️ {post.views_count} vistas</p>
                 </div>
               </div>
-
               {post.goals && (
                 <div className="bg-white/20 backdrop-blur rounded-xl px-3 py-1.5 inline-flex items-center gap-1 mb-2">
                   <span className="text-orange-300 text-sm">🔥 {post.goals.current_streak} días</span>
                   <span className="text-white/60 text-xs">· {post.goals.title}</span>
                 </div>
               )}
-
-              {post.content && (
-                <p className="text-white text-sm leading-relaxed">{post.content}</p>
-              )}
-
-              {!post.media_url && (
-                <div className="mt-4 text-6xl text-center w-full">🔥</div>
-              )}
+              {post.content && <p className="text-white text-sm leading-relaxed">{post.content}</p>}
+              {!mediaUrl && <div className="mt-4 text-6xl text-center w-full">🔥</div>}
             </div>
-
-            {/* Panel de comentarios */}
             {expandedComments && activeIndex === index && (
               <div className="absolute inset-x-0 bottom-16 z-30 bg-black/90 backdrop-blur rounded-t-2xl max-h-96 flex flex-col">
                 <div className="p-4 border-b border-white/10 flex items-center justify-between">
@@ -301,43 +274,23 @@ export default function SocialPage() {
                   <button onClick={() => setExpandedComments(false)} className="text-white/60 text-sm">✕</button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {post.comments.length === 0 && (
-                    <p className="text-white/40 text-sm text-center py-4">Sin comentarios aún</p>
-                  )}
+                  {post.comments.length === 0 && <p className="text-white/40 text-sm text-center py-4">Sin comentarios aún</p>}
                   {post.comments.map(c => (
                     <div key={c.id} className="flex gap-2">
                       <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center text-sm flex-shrink-0">🔥</div>
-                      <div>
-                        <p className="text-white text-xs font-bold">{c.profiles?.name}</p>
-                        <p className="text-white/80 text-sm">{c.content}</p>
-                      </div>
+                      <div><p className="text-white text-xs font-bold">{c.profiles?.name}</p><p className="text-white/80 text-sm">{c.content}</p></div>
                     </div>
                   ))}
                 </div>
                 <div className="p-4 flex gap-2 border-t border-white/10">
-                  <input
-                    type="text"
-                    value={commentInput}
-                    onChange={e => setCommentInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleComentario(post.id)}
-                    placeholder="Escribe un comentario..."
-                    className="flex-1 bg-white/10 text-white placeholder-white/40 border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none"
-                  />
-                  <button
-                    onClick={() => handleComentario(post.id)}
-                    disabled={enviandoComment}
-                    className="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-                  >
-                    {enviandoComment ? '...' : '→'}
-                  </button>
+                  <input type="text" value={commentInput} onChange={e => setCommentInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleComentario(post.id)} placeholder="Escribe un comentario..." className="flex-1 bg-white/10 text-white placeholder-white/40 border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                  <button onClick={() => handleComentario(post.id)} disabled={enviandoComment} className="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50">{enviandoComment ? '...' : '→'}</button>
                 </div>
               </div>
             )}
-
           </div>
-        ))}
+        )})}
       </div>
-
       <BottomNav active="social" />
     </main>
   )
