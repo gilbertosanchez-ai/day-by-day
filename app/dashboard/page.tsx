@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
+import AlarmaMetas from '@/components/AlarmaMetas'
 
 interface Profile { name: string; coins: number }
 interface Goal { id: string; title: string; category: string; current_streak: number; longest_streak: number; total_days: number }
@@ -50,6 +51,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3"><div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-1 flex items-center gap-1"><span>🪙</span><span className="font-bold text-yellow-700">{profile?.coins}</span></div><button onClick={handleLogout} className="text-sm text-gray-400">Salir</button></div>
         </div>
       </header>
+<AlarmaMetas goals={goals as any} />
 
       <div className="max-w-2xl mx-auto px-6 py-6">
         {/* 1. LO MÁS IMPORTANTE */}
@@ -64,19 +66,20 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 3. AHORA SÍ, RETO Y TRIBU ABAJO COMO SECUNDARIO */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/social/retos" className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white">
-            <span className="bg-white/20 text- px-2 py-1 rounded-full">⚡ RETO</span>
-            <h3 className="font-bold text-sm mt-2 leading-tight">{reto?.title}</h3><p className="text-white/80 text- mt-1 line-clamp-2">{reto?.desc}</p>
-            <span className="bg-white text-orange-600 text- font-bold px-3 py-1 rounded-full inline-block mt-3">Unirme</span>
-          </Link>
-          <Link href="/social/amigos" className="bg-white rounded-2xl p-4 border">
-            <div className="flex justify-between"><span className="text- font-bold text-gray-500">👥 TRIBU</span>{solicitudesCount>0 && <span className="bg-red-500 text-white text- px-2 rounded-full">{solicitudesCount}</span>}</div>
-            <p className="text-2xl font-black mt-2">{amigosCount}</p><p className="text-xs text-gray-400">amigos</p>
-            <span className="mt-3 bg-gray-900 text-white text- font-bold px-3 py-1 rounded-full inline-block">{solicitudesCount>0?`${solicitudesCount} solicitudes`:'Ver amigos'}</span>
-          </Link>
-        </div>
+        {/* 3. RETO Y TRIBU */}
+<div className="grid grid-cols-2 gap-3 pb-20">
+  <Link href="/social/retos" className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white">
+    <span className="bg-white/20 text-[10px] px-2 py-1 rounded-full">⚡ RETO</span>
+    <h3 className="font-bold text-sm mt-2 leading-tight">{reto?.title}</h3>
+    <p className="text-white/80 text-[11px] mt-1 line-clamp-2">{reto?.desc}</p>
+    <span className="bg-white text-orange-600 text-[11px] font-bold px-3 py-1 rounded-full inline-block mt-3">Unirme</span>
+  </Link>
+  <Link href="/social/amigos" className="bg-white rounded-2xl p-4 border border-gray-100">
+    <div className="flex justify-between"><span className="text-[10px] font-bold text-gray-500">👥 TRIBU</span>{solicitudesCount>0 && <span className="bg-red-500 text-white text-[10px] px-2 rounded-full animate-pulse">{solicitudesCount}</span>}</div>
+    <p className="text-2xl font-black mt-2">{amigosCount}</p><p className="text-xs text-gray-400">amigos</p>
+    <span className="mt-3 bg-gray-900 text-white text-[11px] font-bold px-3 py-1 rounded-full inline-block">{solicitudesCount>0?`${solicitudesCount} solicitudes`:'Ver amigos'}</span>
+  </Link>
+</div>
 
         <BottomNav active="dashboard" />
       </div>
