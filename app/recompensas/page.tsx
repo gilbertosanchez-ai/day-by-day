@@ -6,6 +6,7 @@ import BottomNav from '@/components/BottomNav'
 interface Profile {
   coins: number
   name: string
+  username: string
 }
 
 export default function RecompensasPage() {
@@ -70,6 +71,28 @@ export default function RecompensasPage() {
 
       <div className="max-w-lg mx-auto px-6 py-6 space-y-4">
 
+        {/* Bloque 0 — Invitar amigo */}
+        <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-white font-black text-lg mb-1">👥 Invita un amigo y gana</h2>
+          <p className="text-white/80 text-sm mb-4">Cada amigo que se registre con tu link te da <strong>+50 🪙</strong></p>
+          <div className="bg-white/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <p className="text-white text-sm font-mono truncate">
+              {typeof window !== 'undefined' ? `${window.location.origin}/registro?ref=${profile?.username}` : ''}
+            </p>
+            <button
+              onClick={() => {
+                const link = `${window.location.origin}/registro?ref=${profile?.username}`
+                navigator.clipboard.writeText(link)
+                alert('¡Link copiado! 🔥')
+              }}
+              className="bg-white text-orange-500 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-orange-50 whitespace-nowrap"
+            >
+              Copiar 📋
+            </button>
+          </div>
+        </div>
+
+      
         {/* Bloque 1 — Monedas a dinero */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-4">
@@ -161,10 +184,10 @@ export default function RecompensasPage() {
           <div className="space-y-3">
             {[
               { emoji: '✅', texto: 'Cumple tu meta diaria', monedas: '+5 🪙' },
-              { emoji: '🔥', texto: 'Racha de 7 días', monedas: '+35 🪙' },
-              { emoji: '🏆', texto: 'Racha de 30 días', monedas: '+150 🪙' },
-              { emoji: '👥', texto: 'Invita un amigo', monedas: '+550 🪙' },
-              { emoji: '📸', texto: 'Comparte tu logro en el feed', monedas: '+10 🪙' },
+              { emoji: '🔥', texto: 'Racha de 7 días', monedas: '+10 🪙' },
+              { emoji: '🏆', texto: 'Racha de 30 días', monedas: '+10 🪙' },
+              { emoji: '👥', texto: 'Invita un amigo', monedas: '+50 🪙' },
+              { emoji: '📸', texto: 'Comparte tu logro en el feed', monedas: '+5 🪙' },
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-3">
