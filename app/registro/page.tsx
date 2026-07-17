@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 export default function RegistroPage() {
   const [name, setName] = useState('')
@@ -12,6 +13,8 @@ export default function RegistroPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+const refUsername = searchParams.get('ref')
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,12 +34,28 @@ export default function RegistroPage() {
       return
     }
 
-    if (data.user) {
+     if (data.user) {
       await supabase.from('profiles').insert({
         id: data.user.id,
         name,
         coins: 0
       })
+
+      // Si vino con link de referido, dar +50 🪙 al que invitó
+      if (refUsername) {
+        const { data: referidor } = await supabase
+          .from('profiles')
+          .select('id, coins')
+          .eq('username', refUsername)
+          .single()
+
+        if (referidor) {
+          await supabase
+            .from('profiles')
+            .update({ coins: referidor.coins + 50 })
+            .eq('id', referidor.id)
+        }
+      }
     }
 
     setSuccess(true)

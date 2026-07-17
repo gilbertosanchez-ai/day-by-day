@@ -108,7 +108,7 @@ export default function NuevaMetaPage() {
           {/* ALARMA 5 MIN ANTES - NUEVO BLOQUE */}
           <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4">
             <div className="flex justify-between items-center mb-3">
-              <div><p className="font-bold text-sm text-gray-800">⏰ Alarma 5 min antes</p><p className="text-xs text-gray-500">Te avisamos para que te prepares</p></div>
+              <div><p className="font-bold text-sm text-gray-800">⏰ hora</p></div>
               <button type="button" onClick={()=>setConAlarma(!conAlarma)} className={`w-12 h-6 rounded-full transition ${conAlarma?'bg-orange-500':'bg-gray-300'}`}><div className={`w-5 h-5 bg-white rounded-full transition ${conAlarma?'translate-x-6':'translate-x-1'} mt-0.5`}/></button>
             </div>
             {conAlarma && <input type="time" value={hora} onChange={e=>setHora(e.target.value)} className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-300"/>}

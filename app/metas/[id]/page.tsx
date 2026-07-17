@@ -171,8 +171,24 @@ export default function MetaPage() {
       }
 
       setGoal({ ...goal, current_streak: newStreak, longest_streak: newLongest, total_days: newTotal })
-      setMensajePost(`¡Cumplí mi meta hoy! 🔥 Día ${newStreak} de racha en "${goal.title}"`)
-      setMostrarModal(true)
+setMensajePost(`¡Cumplí mi meta hoy! 🔥 Día ${newStreak} de racha en "${goal.title}"`)
+setMostrarModal(true)
+
+// Bonus por racha de 7 o 30 días
+if (newStreak === 7 || newStreak === 30) {
+  const { data: profileBonus } = await supabase
+    .from('profiles')
+    .select('coins')
+    .eq('id', user.id)
+    .single()
+
+  if (profileBonus) {
+    await supabase
+      .from('profiles')
+      .update({ coins: profileBonus.coins + 10 })
+      .eq('id', user.id)
+  }
+}
     } else {
       await supabase.from('goals').update({ current_streak: 0 }).eq('id', goalId)
       setGoal({ ...goal, current_streak: 0 })
@@ -212,6 +228,20 @@ export default function MetaPage() {
       media_url,
       media_type: media_type_final
     })
+
+    // Dar +5 monedas por compartir
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('coins')
+      .eq('id', user.id)
+      .single()
+
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ coins: profile.coins + 5 })
+        .eq('id', user.id)
+    }
 
     setPublicando(false)
     setMostrarModal(false)
