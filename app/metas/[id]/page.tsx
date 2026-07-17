@@ -148,7 +148,7 @@ export default function MetaPage() {
         .single()
 
       if (profile && profile.plan !== 'free') {
-        const limiteMonedas: Record<string, number> = { light: 6, pro: 10 }
+        const limiteMonedas: Record<string, number> = { light: 3, pro: 12 }
         const limite = limiteMonedas[profile.plan] || 0
 
         const { count: metasHoy } = await supabase
@@ -158,8 +158,8 @@ export default function MetaPage() {
           .eq('check_date', today)
           .eq('completed', true)
 
-        const monedasGanadas = Math.min((metasHoy || 0) * 5, limite)
-        const monedasAnteriores = Math.min(((metasHoy || 1) - 1) * 5, limite)
+        const monedasGanadas = Math.min((metasHoy || 0) * 1, limite)
+const monedasAnteriores = Math.min(((metasHoy || 1) - 1) * 1, limite)
         const monedasNuevas = monedasGanadas - monedasAnteriores
 
         if (monedasNuevas > 0) {
@@ -239,7 +239,7 @@ if (newStreak === 7 || newStreak === 30) {
     if (profile) {
       await supabase
         .from('profiles')
-        .update({ coins: profile.coins + 5 })
+        .update({ coins: profile.coins + 1 })
         .eq('id', user.id)
     }
 

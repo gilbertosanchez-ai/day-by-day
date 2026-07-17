@@ -40,10 +40,16 @@ export default function NuevaMetaPage() {
     if (!user) return
     const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
     const { count } = await supabase.from('goals').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'active')
-    const limites: Record<string, number> = { free: 1, light: 3, pro: 999 }
+    const limites: Record<string, number> = { free: 1, light: 3, pro: 12 }
     const limite = limites[profile?.plan || 'free']
     if ((count || 0) >= limite) {
-      alert(profile?.plan==='free'?'El plan Free solo permite 1 meta. Suscríbete a Light o Pro para tener más.':'El plan Light permite hasta 3 metas. Suscríbete a Pro.')
+      alert(
+  profile?.plan === 'free'
+    ? 'El plan Free solo permite 1 meta. Suscríbete a Light o Pro para tener más.'
+    : profile?.plan === 'light'
+    ? 'El plan Light permite hasta 3 metas. Suscríbete a Pro para tener más.'
+    : 'El plan Pro permite hasta 12 metas activas.'
+)
       setLoading(false); return
     }
         // INSERT CORRECTO CON ALARMA 5 MIN ANTES
