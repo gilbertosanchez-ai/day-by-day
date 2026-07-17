@@ -4,8 +4,9 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function RegistroPage() {
+function RegistroContent() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -136,5 +137,12 @@ const refUsername = searchParams.get('ref')
         </div>
       </div>
     </main>
+  )
+}
+export default function RegistroPage() {
+  return (
+    <Suspense>
+      <RegistroContent />
+    </Suspense>
   )
 }
