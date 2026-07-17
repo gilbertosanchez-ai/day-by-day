@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 
+
 const categorias = [
   { id: 'salud', emoji: '💪', label: 'Salud y ejercicio' },
   { id: 'espiritualidad', emoji: '🙏', label: 'Espiritualidad' },
@@ -28,6 +29,7 @@ export default function NuevaMetaPage() {
   const [conAlarma, setConAlarma] = useState(true)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+     
 
   const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const toggleDay = (day: string) => setFrequencyDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])
@@ -52,6 +54,7 @@ export default function NuevaMetaPage() {
 )
       setLoading(false); return
     }
+    
         // INSERT CORRECTO CON ALARMA 5 MIN ANTES
     const { error } = await supabase.from('goals').insert({
       user_id: user.id,

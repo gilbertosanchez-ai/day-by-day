@@ -5,6 +5,7 @@ import Link from 'next/link'
 import BottomNav from '@/components/BottomNav'
 import AlarmaMetas from '@/components/AlarmaMetas'
 
+
 interface Profile { name: string; coins: number }
 interface Goal { id: string; title: string; category: string; current_streak: number; longest_streak: number; total_days: number }
 
@@ -15,8 +16,10 @@ export default function DashboardPage() {
   const [amigosCount, setAmigosCount] = useState(0)
   const [solicitudesCount, setSolicitudesCount] = useState(0)
   const [reto, setReto] = useState<{title:string, desc:string, participantes:number} | null>(null)
+  
 
   const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  
 
   useEffect(() => {
     const cargarDatos = async () => {
