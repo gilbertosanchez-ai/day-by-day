@@ -57,15 +57,7 @@ export default function DashboardPage() {
         {/* 1. LO MÁS IMPORTANTE */}
         <Link href="/metas/nueva" className="block w-full bg-orange-500 text-white rounded-2xl py-4 text-center font-semibold text-lg hover:bg-orange-600 transition-colors mb-6 shadow-sm">+ Nueva meta</Link>
 
-        {/* 2. MIS METAS */}
-        {goals.length===0? (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center border mb-6"><div className="text-6xl mb-4">🎯</div><h2 className="text-xl font-bold text-gray-700 mb-2">Aún no tienes metas</h2><p className="text-gray-400 mb-6">Crea tu primera meta y empieza tu racha hoy</p><Link href="/metas/nueva" className="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold">Crear primera meta →</Link></div>
-        ) : (
-          <div className="space-y-3 mb-8"><h2 className="text-lg font-bold text-gray-800">Mis metas activas</h2>
-            {goals.map(goal=>(<Link key={goal.id} href={`/metas/${goal.id}`}><div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md cursor-pointer mb-3"><div className="flex justify-between"><div><h3 className="font-bold text-gray-800">{goal.title}</h3><p className="text-gray-400 text-sm capitalize">{goal.category}</p></div><div className="text-right"><div className="flex gap-1 justify-end"><span className="text-2xl">🔥</span><span className="text-2xl font-bold text-orange-500">{goal.current_streak}</span></div><p className="text-xs text-gray-400">días seguidos</p></div></div></div></Link>))}
-          </div>
-        )}
-
+        
         {/* 3. RETO Y TRIBU */}
 <div className="grid grid-cols-2 gap-3 pb-20">
   <Link href="/social/retos" className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white">
