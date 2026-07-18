@@ -66,6 +66,9 @@ export default function SocialPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30 flex justify-between p-4 pt-6">
         <h1 className="text-white font-bold">🤝 Social</h1>
+        {userId === '36da5a67-b0be-4714-ab6c-753f6ec9ec1e' && (
+  <Link href="/admin" className="bg-red-600 text-white px-3 py-1 rounded-xl text-xs font-bold">⚙️ ADMIN</Link>
+)}
         <div className="flex gap-2"><Link href="/social/amigos" className="bg-white/20 text-white px-3 py-1 rounded-xl text-sm">👥</Link><Link href="/social/retos" className="bg-orange-500 text-white px-3 py-1 rounded-xl text-sm">⚡</Link></div>
       </div>
       <div className="absolute top-16 left-0 right-0 z-30 flex justify-center">
