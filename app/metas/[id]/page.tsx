@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter, useParams } from 'next/navigation'
 
+
 interface Goal {
   id: string
   title: string
@@ -55,6 +56,7 @@ export default function MetaPage() {
   const router = useRouter()
   const params = useParams()
   const goalId = params.id as string
+  
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,15 +73,15 @@ export default function MetaPage() {
         .eq('id', goalId)
         .single()
 
-      const { data: checkData } = await supabase
-        .from('daily_checks')
-        .select('*')
-        .eq('goal_id', goalId)
-        .eq('check_date', today)
-        .single()
+     const { data: checkData } = await supabase
+  .from('daily_checks')
+  .select('*')
+  .eq('goal_id', goalId)
+  .eq('check_date', today)
+  .maybeSingle()
 
-      setGoal(goalData)
-      setTodayCheck(checkData)
+setGoal(goalData)
+setTodayCheck(checkData)
       setLoading(false)
     }
     cargarDatos()
@@ -129,8 +131,7 @@ export default function MetaPage() {
       .single()
 
     setCheckId(checkData?.id || null)
-    setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
-
+    
     if (completed) {
       const newStreak = goal.current_streak + 1
       const newLongest = Math.max(newStreak, goal.longest_streak)
@@ -147,9 +148,9 @@ export default function MetaPage() {
         .eq('id', user.id)
         .single()
 
-      if (profile && profile.plan !== 'free') {
-        const limiteMonedas: Record<string, number> = { light: 3, pro: 12 }
-        const limite = limiteMonedas[profile.plan] || 0
+      if (profile) {
+  const limiteMonedas: Record<string, number> = { free: 1, light: 6, pro: 25 }
+  const limite = limiteMonedas[profile.plan] || 1
 
         const { count: metasHoy } = await supabase
           .from('daily_checks')
@@ -172,6 +173,7 @@ const monedasAnteriores = Math.min(((metasHoy || 1) - 1) * 1, limite)
 
       setGoal({ ...goal, current_streak: newStreak, longest_streak: newLongest, total_days: newTotal })
 setMensajePost(`¡Cumplí mi meta hoy! 🔥 Día ${newStreak} de racha en "${goal.title}"`)
+
 setMostrarModal(true)
 
 // Bonus por racha de 7 o 30 días
@@ -193,8 +195,11 @@ if (newStreak === 7 || newStreak === 30) {
       await supabase.from('goals').update({ current_streak: 0 }).eq('id', goalId)
       setGoal({ ...goal, current_streak: 0 })
     }
-
-    setChecking(false)
+    
+if (!completed) {
+  setTodayCheck({ id: checkData?.id || '', completed, check_date: today })
+}
+setChecking(false)
   }
 
   const handlePublicar = async () => {
@@ -245,6 +250,7 @@ if (newStreak === 7 || newStreak === 30) {
 
     setPublicando(false)
     setMostrarModal(false)
+    setTodayCheck({ id: checkId || '', completed: true, check_date: today })
     setMediaFile(null)
     setMediaPreview(null)
     setMediaType(null)
@@ -420,7 +426,13 @@ if (newStreak === 7 || newStreak === 30) {
 
             <div className="flex gap-3">
               <button
-                onClick={() => { setMostrarModal(false); setMediaFile(null); setMediaPreview(null); setMediaType(null) }}
+                onClick={() => { 
+  setMostrarModal(false)
+  setMediaFile(null)
+  setMediaPreview(null)
+  setMediaType(null)
+  setTodayCheck({ id: checkId || '', completed: true, check_date: today })
+}}
                 className="flex-1 border border-gray-200 text-gray-500 rounded-xl py-3 font-medium hover:bg-gray-50"
               >
                 No gracias
@@ -436,6 +448,7 @@ if (newStreak === 7 || newStreak === 30) {
           </div>
         </div>
       )}
+
 
     </main>
   )

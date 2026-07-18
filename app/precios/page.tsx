@@ -14,7 +14,7 @@ const planes = [
     features: ['1 meta activa', 'Racha diaria', 'Sin monedas', 'Sin recompensas'],
     color: 'gray'
   },
-  {
+ {
     id: 'light',
     nombre: 'Light',
     precio: 49,
@@ -24,7 +24,8 @@ const planes = [
     descripcion: 'Para comprometidos',
     features: ['3 metas activas', 'Racha diaria', 'Hasta 6 monedas/día', 'Acceso a recompensas'],
     color: 'blue',
-    popular: false
+    popular: false,
+    promo: true
   },
   {
     id: 'pro',
@@ -122,9 +123,15 @@ export default function PreciosPage() {
                   <h3 className="text-xl font-bold text-gray-800">{plan.nombre}</h3>
                   <p className="text-gray-400 text-sm">{plan.descripcion}</p>
                 </div>
-                <div className="text-right">
+                 <div className="text-right">
                   {plan.precio === 0 ? (
                     <p className="text-2xl font-bold text-gray-800">Gratis</p>
+                  ) : (plan as any).promo ? (
+                    <div>
+                      <span className="text-sm line-through text-gray-400">${plan.precio} MXN/mes</span>
+                      <p className="text-2xl font-bold text-green-600">¡Gratis!</p>
+                      <p className="text-xs text-green-500 font-medium">primeros 12 meses 🎁</p>
+                    </div>
                   ) : (
                     <div>
                       <span className="text-3xl font-bold text-gray-800">${plan.precio}</span>
@@ -158,7 +165,7 @@ export default function PreciosPage() {
                       : 'bg-blue-500 text-white hover:bg-blue-600'
                   } disabled:opacity-50`}
                 >
-                  {loading === plan.id ? 'Redirigiendo...' : planActual === plan.id ? '✓ Plan activo' : `Suscribirse a ${plan.nombre}`}
+                  {loading === plan.id ? 'Redirigiendo...' : planActual === plan.id ? '✓ Plan activo' : (plan as any).promo ? 'Activar gratis por 12 meses' : `Suscribirse a ${plan.nombre}`}
                 </button>
               )}
             </div>
