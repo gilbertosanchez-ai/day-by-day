@@ -36,11 +36,14 @@ const refUsername = searchParams.get('ref')
     }
 
      if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        name,
-        coins: 0
-      })
+     await supabase.from('profiles').insert({
+  id: data.user.id,
+  name,
+  coins: 0,
+  plan: 'light',
+  plan_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+  promo_used_at: new Date().toISOString()
+})
 
       // Si vino con link de referido, dar +50 🪙 al que invitó
       if (refUsername) {

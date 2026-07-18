@@ -6,7 +6,12 @@ import BottomNav from '@/components/BottomNav'
 import AlarmaMetas from '@/components/AlarmaMetas'
 
 
-interface Profile { name: string; coins: number }
+interface Profile { 
+  name: string
+  coins: number
+  plan: string
+  plan_expires_at: string | null
+}
 interface Goal { id: string; title: string; category: string; current_streak: number; longest_streak: number; total_days: number }
 
 export default function DashboardPage() {
@@ -28,7 +33,21 @@ export default function DashboardPage() {
       if (!user) return
       const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       const { data: goalsData } = await supabase.from('goals').select('*').eq('user_id', user.id).eq('status','active').order('created_at',{ascending:false})
-      setProfile(profileData); setGoals(goalsData||[])
+      setProfile(profileData)
+
+// Verificar si el plan light expiró
+if (profileData?.plan === 'light' && profileData?.plan_expires_at) {
+  const expiro = new Date(profileData.plan_expires_at) < new Date()
+  if (expiro) {
+    await supabase
+      .from('profiles')
+      .update({ plan: 'free', plan_expires_at: null })
+      .eq('id', user.id)
+    profileData.plan = 'free'
+  }
+}
+
+setGoals(goalsData || [])
 
       const { data: friendships } = await supabase.from('friendships').select('status,friend_id,user_id').or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
       if(friendships){

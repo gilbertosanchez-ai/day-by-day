@@ -12,13 +12,6 @@ const pasos = [
   { emoji: '🪙', titulo: 'Gana recompensas', desc: 'Acumula monedas por cada día cumplido y canjéalas por premios reales.' },
 ]
 
-const recompensas = [
-  { emoji: '👟', nombre: 'Pantuflas DbD', monedas: 500 },
-  { emoji: '☕', nombre: 'Taza DbD', monedas: 700 },
-  { emoji: '👕', nombre: 'Playera impresa', monedas: 1100 },
-  { emoji: '🧴', nombre: 'Termo grabado', monedas: 1500 },
-]
-
 export default function LandingPage() {
   const router = useRouter()
   const supabase = createBrowserClient(
@@ -121,25 +114,59 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Recompensas */}
+     {/* Gana dinero real */}
       <section className="py-24 bg-white relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-center mb-16">
-            <h2 className="text-4xl font-black text-gray-900 mb-4">Gana recompensas <span className="text-orange-500">reales</span> 🏆</h2>
-            <p className="text-xl text-gray-500">Tu esfuerzo tiene premio. Canjea tus monedas por productos físicos.</p>
+            <h2 className="text-4xl font-black text-gray-900 mb-4">Tu esfuerzo vale <span className="text-green-500">dinero real</span> 💰</h2>
+            <p className="text-xl text-gray-500">Cumple metas, acumula monedas y retira efectivo a tu cuenta.</p>
           </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {recompensas.map((r, i) => (
-              <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} whileHover={{ scale: 1.05, transition: { duration: 0.2 } }} className="bg-orange-50 rounded-2xl p-6 text-center border border-orange-100">
-                <div className="text-5xl mb-3">{r.emoji}</div>
-                <h3 className="font-bold text-gray-800 mb-2">{r.nombre}</h3>
-                <div className="flex items-center justify-center gap-1">
-                  <span>🪙</span>
-                  <span className="font-bold text-orange-500">{r.monedas}</span>
+
+          {/* Cómo ganar monedas */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            {[
+              { emoji: '✅', accion: 'Cumple tu meta diaria', monedas: '+1 🪙' },
+              { emoji: '📸', accion: 'Comparte tu logro', monedas: '+1 🪙' },
+              { emoji: '🔥', accion: 'Racha de 7 días', monedas: '+10 🪙' },
+              { emoji: '👥', accion: 'Invita un amigo', monedas: '+50 🪙' },
+            ].map((item, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} whileHover={{ y: -6, transition: { duration: 0.2 } }} className="bg-orange-50 rounded-2xl p-6 text-center border border-orange-100">
+                <div className="text-5xl mb-3">{item.emoji}</div>
+                <p className="text-sm font-medium text-gray-600 mb-3">{item.accion}</p>
+                <div className="bg-orange-500 text-white font-black px-3 py-1 rounded-full text-sm inline-block">
+                  {item.monedas}
                 </div>
               </motion.div>
             ))}
           </div>
+
+          {/* Conversión */}
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-8 text-center text-white mb-6">
+            <p className="text-lg font-medium text-green-100 mb-2">La conversión es simple</p>
+            <p className="text-4xl font-black mb-2">20 🪙 = $1 peso mexicano</p>
+            <p className="text-green-200 text-sm">Retira a tu cuenta bancaria cuando acumules $25 pesos mínimo</p>
+          </motion.div>
+
+          {/* Próximamente vistas */}
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }} className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-center text-white relative overflow-hidden">
+            <div className="absolute top-3 right-3 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+              PRÓXIMAMENTE
+            </div>
+            <div className="text-5xl mb-4">👁️</div>
+            <h3 className="text-2xl font-black mb-2">Monetización por vistas</h3>
+            <p className="text-purple-200 text-sm max-w-md mx-auto">
+              Muy pronto podrás ganar dinero por cada vista en tus videos de progreso — como TikTok pero enfocado en perseverancia y superación personal. Entre más inspires, más ganas.
+            </p>
+            <div className="flex justify-center gap-6 mt-6">
+              {['1K vistas', '10K vistas', '100K vistas'].map((v, i) => (
+                <div key={i} className="text-center">
+                  <p className="text-white font-black text-lg">{'💸'.repeat(i + 1)}</p>
+                  <p className="text-purple-200 text-xs mt-1">{v}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
@@ -154,20 +181,33 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { nombre: 'Free', precio: 0, features: ['1 meta', 'Racha diaria', 'Sin monedas'], popular: false },
-              { nombre: 'Light', precio: 49, features: ['3 metas', 'Hasta 6 monedas/día', 'Recompensas'], popular: false },
+              { nombre: 'Light', precio: 49, features: ['3 metas', 'Hasta 6 monedas/día', 'Recompensas'], popular: false, promo: true },
               { nombre: 'Pro', precio: 99, features: ['Metas ilimitadas', 'Hasta 10 monedas/día', 'Recompensas', 'Soporte prioritario'], popular: true },
             ].map((plan, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.15 }} whileHover={{ y: -6, transition: { duration: 0.2 } }} className={`bg-white rounded-2xl p-6 border-2 ${plan.popular ? 'border-orange-400 shadow-xl' : 'border-gray-100'}`}>
                 {plan.popular && <div className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">MÁS POPULAR</div>}
                 <h3 className="text-xl font-bold text-gray-800 mb-1">{plan.nombre}</h3>
                 <div className="mb-4">
-                  {plan.precio === 0 ? <span className="text-3xl font-black text-gray-800">Gratis</span> : <div><span className="text-3xl font-black text-gray-800">${plan.precio}</span><span className="text-gray-400 text-sm"> MXN/mes</span></div>}
-                </div>
+  {plan.precio === 0 ? (
+    <span className="text-3xl font-black text-gray-800">Gratis</span>
+  ) : (plan as any).promo ? (
+    <div>
+      <span className="text-sm line-through text-gray-400">${plan.precio} MXN/mes</span>
+      <p className="text-2xl font-black text-green-600">¡Gratis!</p>
+      <p className="text-xs text-green-500 font-medium">primeros 12 meses 🎁</p>
+    </div>
+  ) : (
+    <div>
+      <span className="text-3xl font-black text-gray-800">${plan.precio}</span>
+      <span className="text-gray-400 text-sm"> MXN/mes</span>
+    </div>
+  )}
+</div>
                 <ul className="space-y-2 mb-6">
                   {plan.features.map((f, j) => <li key={j} className="flex items-center gap-2 text-sm text-gray-600"><span className="text-orange-500">✓</span> {f}</li>)}
                 </ul>
                 <Link href="/registro" className={`w-full block py-3 rounded-xl font-semibold text-center transition-colors ${plan.popular ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                  {plan.precio === 0 ? 'Empezar gratis' : `Elegir ${plan.nombre}`}
+                  {plan.precio === 0 ? 'Empezar gratis' : (plan as any).promo ? 'Activar gratis por 12 meses' : `Elegir ${plan.nombre}`}
                 </Link>
               </motion.div>
             ))}

@@ -62,6 +62,21 @@ export default function PerfilPage() {
     window.location.href = '/landing'
   }
 
+const handleCancelarSuscripcion = async () => {
+  if (!confirm('¿Seguro que quieres cancelar tu suscripción? Bajarás al plan Free.')) return
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase
+    .from('profiles')
+    .update({ plan: 'free', plan_expires_at: null })
+    .eq('id', user.id)
+
+  setProfile(prev => prev ? { ...prev, plan: 'free' } : null)
+  alert('Suscripción cancelada. Ahora estás en el plan Free.')
+}
+
   if (loading) {
     return (
       <main className="min-h-screen bg-orange-50 flex items-center justify-center">
