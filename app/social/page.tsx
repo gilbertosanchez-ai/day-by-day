@@ -89,7 +89,13 @@ export default function SocialPage() {
               <button onClick={()=>handleReaction(post.id,'heart')} className="flex flex-col items-center"><div className={`w-12 h-12 flex items-center justify-center text-3xl ${yoHeart?'scale-125':''}`}>❤️</div>{heartCount>0 && <span className="text-white text-xs font-bold">{heartCount}</span>}</button>
               <button onClick={()=>handleReaction(post.id,'fire')} className="flex flex-col items-center"><div className={`w-12 h-12 flex items-center justify-center text-3xl ${yoFire?'scale-125':''}`}>🔥</div>{fireCount>0 && <span className="text-white text-xs font-bold">{fireCount}</span>}</button>
               <div className="flex flex-col items-center"><div className="w-12 h-12 bg-black/30 rounded-full flex items-center justify-center text-xl">👁</div><span className="text-white text-xs font-bold">{post.views_count}</span></div>
-              <button onClick={async()=>{ if(confirm('Reportar video?')){ await supabase.from('reports').insert({post_id:post.id,user_id:userId}); alert('Reportado')}}} className="w-12 h-12 bg-black/30 rounded-full flex items-center justify-center">🚩</button>
+              <button onClick={async()=>{
+  const reason = prompt('¿Por qué lo reportas?\n1: spam\n2: ofensivo\n3: desnudo\n4: violencia')
+  if(!reason) return
+  const { error } = await supabase.from('reports').insert({post_id: post.id, user_id: userId, reason})
+  if(error) alert(error.message)
+  else alert('Reportado ✅ Gracias')
+}} className="w-12 h-12 bg-black/30 rounded-full flex items-center justify-center text-xl">🚩</button>
             </div>
 
             <div className="relative z-10 p-4 pb-28 pr-20">

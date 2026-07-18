@@ -118,19 +118,32 @@ const handleCancelarSuscripcion = async () => {
       </div>
     )}
     {profile?.plan === 'light' && (
-      <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-        <p className="text-sm text-blue-600 mb-2">Plan <strong>Light ⚡</strong> activo</p>
-        <a href="/precios" className="block w-full bg-orange-500 text-white rounded-lg py-2 text-sm font-semibold hover:bg-orange-600">
-          🔥 Mejora a Pro →
-        </a>
-      </div>
-    )}
-    {profile?.plan === 'pro' && (
-      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-        <p className="text-sm text-orange-600 font-bold">🔥 Plan Pro activo</p>
-        <p className="text-xs text-gray-400 mt-1">Tienes acceso a todo</p>
-      </div>
-    )}
+  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+    <p className="text-sm text-blue-600 mb-2">Plan <strong>Light ⚡</strong> activo</p>
+    <a href="/precios" className="block w-full bg-orange-500 text-white rounded-lg py-2 text-sm font-semibold hover:bg-orange-600 text-center mb-2">
+      🔥 Mejora a Pro →
+    </a>
+    <button
+      onClick={handleCancelarSuscripcion}
+      className="block w-full border border-gray-300 text-gray-500 rounded-lg py-2 text-sm hover:bg-gray-50"
+    >
+      Cancelar suscripción
+    </button>
+  </div>
+)}
+
+{profile?.plan === 'pro' && (
+  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+    <p className="text-sm text-orange-600 font-bold">🔥 Plan Pro activo</p>
+    <p className="text-xs text-gray-400 mt-1 mb-3">Tienes acceso a todo</p>
+    <button
+      onClick={handleCancelarSuscripcion}
+      className="block w-full border border-gray-300 text-gray-500 rounded-lg py-2 text-sm hover:bg-gray-50"
+    >
+      Cancelar suscripción
+    </button>
+  </div>
+)}
   </div>
 </div>
 
